@@ -116,54 +116,37 @@ class SuggestRacksView(View):
         batch = get_object_or_404(Batch, id=batch_id)
         product = batch.product
         
-        # Общее количество товара из партии, которое КОГДА-ЛИБО было размещено (включая выданный)
-        total_ever_placed = Placement.objects.filter(
-            batch=batch
-        ).aggregate(total=Sum('quantity'))['total'] or 0
-        
-        # Общее количество товара из партии, которое было ВЫДАНО
-        total_issued = WarehouseJournal.objects.filter(
-            batch=batch,
-            operation_type='OUT'
-        ).aggregate(total=Sum('quantity'))['total'] or 0
-        
-        # Фактически оставшееся количество товара в партии для размещения
-        actual_remaining = batch.get_actual_remaining()
-        if actual_remaining <= 0:
+        # Проверяем, полностью ли размещена партия
+        if batch.is_fully_placed():
             messages.info(request, 'Вся партия уже была размещена на складе')
             return redirect('warehouse:batch_list')
         
+        # Вычисляем оставшееся количество для первоначального размещения
+        remaining_quantity = batch.get_initial_remaining()
+        
         # Считаем, сколько товара из партии в данный момент активно размещено
-        placed_quantity = Placement.objects.filter(
-            batch=batch, 
-            is_active=True
-        ).aggregate(total=Sum('quantity'))['total'] or 0
+        placed_quantity = batch.quantity - remaining_quantity
         
-        remaining_quantity = batch.quantity - placed_quantity
-        
-        # Это страховка на случай, если remaining_quantity некорректно рассчитано
-        remaining_quantity = min(remaining_quantity, actual_remaining)
-        
-        if remaining_quantity <= 0:
-            messages.success(request, 'Вся партия уже размещена на складе')
-            return redirect('warehouse:batch_list')
-        
-        # Алгоритм подбора стеллажей (best fit decreasing)
+        # Алгоритм подбора стеллажей...
         racks = Rack.objects.filter(is_active=True)
         suggested_racks = []
-        # Сортируем стеллажи по доступному объему (по убыванию)
+        
+        # Сортируем стеллажи по доступному объему
         sorted_racks = sorted(racks, key=lambda x: x.available_volume(), reverse=True)
         remaining = remaining_quantity
+        
         for rack in sorted_racks:
             if remaining <= 0:
                 break
             # Проверяем, подходит ли товар по габаритам
             if not rack.can_fit_product(product):
                 continue
+            
             # Рассчитываем, сколько товара можно разместить на стеллаже
             max_by_volume = int(rack.available_volume() // product.get_volume())
             max_by_weight = int(rack.available_weight() // product.weight)
             max_quantity = min(max_by_volume, max_by_weight)
+            
             if max_quantity > 0:
                 quantity_to_place = min(max_quantity, remaining)
                 suggested_racks.append({
@@ -178,7 +161,6 @@ class SuggestRacksView(View):
             'suggested_racks': suggested_racks,
             'remaining_quantity': remaining,
             'already_placed': placed_quantity,
-            'actual_remaining': actual_remaining
         }
         return render(request, 'warehouse/suggest_racks.html', context)
 
@@ -186,25 +168,14 @@ class PlaceBatchView(View):
     def get(self, request, batch_id):
         batch = get_object_or_404(Batch, id=batch_id)
         
-        # Проверяем, полностью ли размещена партия
+        # Проверка, полностью ли размещена партия
         if batch.is_fully_placed():
             messages.info(request, 'Вся партия уже размещена на складе')
             return redirect('warehouse:batch_list')
         
         # Вычисляем оставшееся количество для размещения
-        actual_remaining = batch.get_actual_remaining()
-        
-        if actual_remaining <= 0:
-            messages.info(request, 'В партии нет товара для размещения')
-            return redirect('warehouse:batch_list')
-        
-        # Считаем, сколько товара из партии в данный момент активно размещено
-        placed_quantity = Placement.objects.filter(
-            batch=batch, 
-            is_active=True
-        ).aggregate(total=Sum('quantity'))['total'] or 0
-        
-        remaining_quantity = min(remaining_quantity, actual_remaining) if 'remaining_quantity' in locals() else actual_remaining
+        remaining_quantity = batch.get_initial_remaining()
+        placed_quantity = batch.quantity - remaining_quantity
         
         form = PlacementForm(batch_id=batch_id)
         
@@ -212,20 +183,16 @@ class PlaceBatchView(View):
         rack_id = request.GET.get('rack_id')
         quantity = request.GET.get('quantity')
         
-        # Безопасная установка начальных значений
         if rack_id:
             try:
-                rack_id_int = int(rack_id)
-                if Rack.objects.filter(id=rack_id_int, is_active=True).exists():
-                    form.fields['rack'].initial = rack_id_int
+                form.fields['rack'].initial = int(rack_id)
             except (ValueError, TypeError):
                 pass
         
         if quantity:
             try:
-                quantity_int = int(quantity)
                 # Ограничиваем предложенное количество доступным остатком
-                form.fields['quantity'].initial = min(quantity_int, remaining_quantity)
+                form.fields['quantity'].initial = min(int(quantity), remaining_quantity)
             except (ValueError, TypeError):
                 pass
         
@@ -242,23 +209,32 @@ class PlaceBatchView(View):
         batch = get_object_or_404(Batch, id=batch_id)
         form = PlacementForm(request.POST, batch_id=batch_id)
         
-        # Проверка, есть ли в партии товар для размещения
-        total_ever_placed = Placement.objects.filter(batch=batch).aggregate(total=Sum('quantity'))['total'] or 0
-        total_issued = WarehouseJournal.objects.filter(batch=batch, operation_type='OUT').aggregate(total=Sum('quantity'))['total'] or 0
-        actual_remaining = batch.get_actual_remaining()
-        if actual_remaining <= 0:
+        # Проверка, полностью ли размещена партия
+        if batch.is_fully_placed():
             messages.error(request, 'Невозможно разместить товар: вся партия уже была размещена на складе')
+            return redirect('warehouse:batch_list')
+        
+        # Проверяем оставшееся количество для размещения
+        remaining_quantity = batch.get_initial_remaining()
+        if remaining_quantity <= 0:
+            messages.error(request, 'Невозможно разместить товар: в партии не осталось товара для размещения')
             return redirect('warehouse:batch_list')
         
         if form.is_valid():
             rack = form.cleaned_data['rack']
             quantity = form.cleaned_data['quantity']
-            product = batch.product
             
-            # Дополнительная проверка перед размещением
-            if quantity > actual_remaining:
-                messages.error(request, f'Невозможно разместить указанное количество. В партии осталось только {actual_remaining} ед. для размещения')
-                return render(request, 'warehouse/place_batch.html', {'form': form, 'batch': batch, 'placed_quantity': total_ever_placed, 'remaining_quantity': actual_remaining})
+            # Проверяем, не превышает ли запрашиваемое количество доступное для размещения
+            if quantity > remaining_quantity:
+                messages.error(request, f'Невозможно разместить указанное количество. В партии осталось только {remaining_quantity} ед. для размещения')
+                return render(request, 'warehouse/place_batch.html', {
+                    'form': form, 
+                    'batch': batch,
+                    'placed_quantity': batch.quantity - remaining_quantity,
+                    'remaining_quantity': remaining_quantity
+                })
+            
+            product = batch.product
             
             # Создаем размещение
             placement = Placement.objects.create(
@@ -282,18 +258,22 @@ class PlaceBatchView(View):
             
             messages.success(request, f'Успешно размещено {quantity} ед. товара {product.name} на стеллаже {rack.name}')
             
-            # Пересчитываем остатки
-            total_ever_placed_new = Placement.objects.filter(batch=batch).aggregate(total=Sum('quantity'))['total'] or 0
-            total_issued_new = WarehouseJournal.objects.filter(batch=batch, operation_type='OUT').aggregate(total=Sum('quantity'))['total'] or 0
-            actual_remaining_new = batch.quantity - total_ever_placed_new + total_issued_new
-            
-            if actual_remaining_new <= 0:
+            # Проверяем, полностью ли размещена партия после этой операции
+            if batch.is_fully_placed():
                 messages.success(request, 'Вся партия успешно размещена на складе')
                 return redirect('warehouse:batch_list')
             else:
                 return redirect('warehouse:suggest_racks', batch_id=batch.id)
         
-        return render(request, 'warehouse/place_batch.html', {'form': form, 'batch': batch})
+        # Если форма невалидна
+        remaining_quantity = batch.get_initial_remaining()
+        placed_quantity = batch.quantity - remaining_quantity
+        return render(request, 'warehouse/place_batch.html', {
+            'form': form, 
+            'batch': batch,
+            'placed_quantity': placed_quantity,
+            'remaining_quantity': remaining_quantity
+        })
 
 class IssueProductView(View):
     def get(self, request):

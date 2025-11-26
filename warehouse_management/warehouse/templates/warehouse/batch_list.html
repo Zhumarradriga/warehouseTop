@@ -41,7 +41,7 @@
                         <td>
                             {% if batch.is_fully_placed %}
                                 <span class="badge bg-success">Полностью размещено</span>
-                            {% elif batch.get_actual_remaining < batch.quantity %}
+                            {% elif batch.get_initial_remaining < batch.quantity %}
                                 <span class="badge bg-warning">Частично размещено</span>
                             {% else %}
                                 <span class="badge bg-danger">Не размещено</span>

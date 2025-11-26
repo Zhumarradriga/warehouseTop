@@ -30,19 +30,15 @@ class PlacementForm(forms.Form):
         batch_id = kwargs.pop('batch_id', None)
         super().__init__(*args, **kwargs)
         if batch_id:
+            self.fields['batch'].queryset = Batch.objects.filter(id=batch_id)
+            self.fields['batch'].initial = batch_id
+            
             try:
                 batch = Batch.objects.get(id=batch_id)
-                self.fields['batch'].queryset = Batch.objects.filter(id=batch_id)
-                self.fields['batch'].initial = batch_id
-                
-                # Используем обновленную логику для расчета оставшегося количества
-                remaining_quantity = batch.get_actual_remaining()
-                
-                if remaining_quantity <= 0:
-                    remaining_quantity = 0
+                remaining_quantity = batch.get_initial_remaining()
                 
                 self.fields['quantity'].widget.attrs['max'] = remaining_quantity
-                self.fields['quantity'].widget.attrs['placeholder'] = f'Максимум: {remaining_quantity} ед.'
+                self.fields['quantity'].widget.attrs['placeholder'] = f'Максимум: {remaining_quantity}'
             except Batch.DoesNotExist:
                 self.fields['quantity'].widget.attrs['max'] = 0
                 self.fields['quantity'].widget.attrs['placeholder'] = 'Партия не найдена'
@@ -54,13 +50,14 @@ class PlacementForm(forms.Form):
         rack = cleaned_data.get('rack')
         
         if batch and quantity:
-            placed_quantity = Placement.objects.filter(batch=batch, is_active=True).aggregate(total=Sum('quantity'))['total'] or 0
-            remaining_quantity = batch.quantity - placed_quantity
-            if quantity > remaining_quantity:
-                raise ValidationError(f'Нельзя разместить больше товара, чем осталось в партии. Доступно: {remaining_quantity}')
+            # Проверяем, не превышает ли количество доступное для размещения
+            remaining = batch.get_initial_remaining()
+            if quantity > remaining:
+                raise ValidationError(f'Нельзя разместить больше товара, чем осталось в партии. Доступно: {remaining}')
         
         if batch and rack and quantity:
             product = batch.product
+            
             # Проверяем, поместится ли товар на стеллаж по габаритам
             if not rack.can_fit_product(product):
                 raise ValidationError(f'Товар не помещается на выбранный стеллаж по габаритам')

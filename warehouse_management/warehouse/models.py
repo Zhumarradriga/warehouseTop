@@ -85,6 +85,11 @@ class Batch(models.Model):
     def __str__(self):
         return f"Партия {self.product.name} x {self.quantity} от {self.arrival_date.date()}"
     
+    def get_initial_remaining(self):
+        """Возвращает количество товара из партии, которое еще не было размещено изначально"""
+        total_placed = self.placement_set.aggregate(total=Sum('quantity'))['total'] or 0
+        return max(0, self.quantity - total_placed)
+    
     def get_actual_remaining(self):
         """Возвращает количество товара из партии, которое еще не было размещено"""
         total_placed = self.placement_set.filter(is_active=True).aggregate(total=Sum('quantity'))['total'] or 0
@@ -92,17 +97,22 @@ class Batch(models.Model):
     
     def is_fully_processed(self):
         """Проверяет, полностью ли обработана партия (размещена и выдана)"""
-        return self.get_actual_remaining() <= 0
+        return self.is_fully_placed() and self.get_available_for_issue() == 0
     
     def is_fully_placed(self):
         """Проверяет, полностью ли размещена партия (независимо от выдачи)"""
-        total_placed = self.placement_set.filter(is_active=True).aggregate(total=Sum('quantity'))['total'] or 0
-        return total_placed >= self.quantity
+        return self.get_initial_remaining() <= 0
     
     def get_available_for_issue(self):
-        """Возвращает количество товара из партии, доступное для выдачи (уже размещено и не выдано)"""
-        total_placed = self.placement_set.filter(is_active=True).aggregate(total=Sum('quantity'))['total'] or 0
-        total_issued = self.warehousejournal_set.filter(operation_type='OUT').aggregate(total=Sum('quantity'))['total'] or 0
+        """Возвращает количество товара из партии, доступное для выдачи"""
+        # Считаем общее количество размещено из этой партии
+        total_placed = self.placement_set.aggregate(total=Sum('quantity'))['total'] or 0
+        
+        # Считаем количество выдано из этой партии
+        total_issued = self.warehousejournal_set.filter(
+            operation_type='OUT'
+        ).aggregate(total=Sum('quantity'))['total'] or 0
+        
         return max(0, total_placed - total_issued)
 
 class Placement(models.Model):
