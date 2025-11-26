@@ -1,0 +1,90 @@
+{% extends 'warehouse/base.html' %}
+{% block page_title %}Результаты проверки вместимости{% endblock %}
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header {% if can_store %}bg-success{% else %}bg-danger{% endif %} text-white">
+        <h4 class="mb-0">
+            <i class="bi {% if can_store %}bi-check-circle{% else %}bi-x-circle{% endif %} me-2"></i>
+            {% if can_store %}Склад может принять партию{% else %}Недостаточно места на складе{% endif %}
+        </h4>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5><strong>Проверяемая партия:</strong></h5>
+                <p class="mb-1"><strong>Товар:</strong> {{ product.name }}</p>
+                <p class="mb-1"><strong>Запрашиваемое количество:</strong> {{ requested_quantity }} ед.</p>
+                <p class="mb-1"><strong>Габариты:</strong> {{ product.length }} × {{ product.width }} × {{ product.height }} см</p>
+                <p class="mb-0"><strong>Вес:</strong> {{ product.weight }} кг на единицу</p>
+            </div>
+            <div class="col-md-6">
+                <h5><strong>Результат проверки:</strong></h5>
+                {% if can_store %}
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle me-2"></i>
+                    Склад <strong>может</strong> принять данную партию товара
+                </div>
+                <p>Для размещения партии потребуется {{ suggested_racks|length }} стеллажей</p>
+                {% else %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle me-2"></i>
+                    Склад <strong>не может</strong> полностью принять данную партию товара
+                </div>
+                <p>Удалось разместить только {{ placed_quantity }} из {{ requested_quantity }} единиц</p>
+                {% endif %}
+            </div>
+        </div>
+        {% if suggested_racks %}
+        <h5 class="mb-3">Предлагаемое размещение:</h5>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Стеллаж</th>
+                        <th>Количество единиц</th>
+                        <th>Объем после размещения</th>
+                        <th>Загрузка после размещения</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in suggested_racks %}
+                    <tr>
+                        <td>{{ item.rack.name }}</td>
+                        <td>{{ item.quantity }} ед.</td>
+                        <td>{{ item.rack.available_volume|floatformat:0 }} см³ из {{ item.rack.volume|floatformat:0 }} см³</td>
+                        <td>
+                            <div class="small mb-1">{{ item.utilization_after|floatformat:1 }}%</div>
+                            <div class="utilization-bar">
+                                <div class="utilization-fill {% if item.utilization_after > 85 %}danger{% elif item.utilization_after > 70 %}warning{% endif %}">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+        {% if remaining_quantity > 0 %}
+        <div class="alert alert-warning mt-4">
+            <h5 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Требуется дополнительное место</h5>
+            <p class="mb-0">Для полного размещения партии не хватает места под {{ remaining_quantity }} единиц товара.</p>
+        </div>
+        {% endif %}
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'warehouse:check_capacity' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Новая проверка
+            </a>
+            {% if can_store %}
+            <a href="{% url 'warehouse:batch_create' %}" class="btn btn-success">
+                <i class="bi bi-truck"></i> Оформить приемку партии
+            </a>
+            {% else %}
+            <a href="{% url 'warehouse:rack_list' %}" class="btn btn-warning">
+                <i class="bi bi-grid"></i> Добавить или освободить стеллажи
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

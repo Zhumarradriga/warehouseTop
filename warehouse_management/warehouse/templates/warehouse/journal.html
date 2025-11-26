@@ -1,0 +1,136 @@
+{% extends 'warehouse/base.html' %}
+{% block page_title %}Журнал операций{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Журнал складских операций</h2>
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="periodDropdown"
+            data-bs-toggle="dropdown">
+            <i class="bi bi-calendar me-1"></i> Период: Все время
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="periodDropdown">
+            <li><a class="dropdown-item" href="#">Все время</a></li>
+            <li><a class="dropdown-item" href="#">Сегодня</a></li>
+            <li><a class="dropdown-item" href="#">За неделю</a></li>
+            <li><a class="dropdown-item" href="#">За месяц</a></li>
+        </ul>
+    </div>
+</div>
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <select name="operation_type" class="form-select">
+                    <option value="">Все операции</option>
+                    <option value="IN" {% if is_in_selected %}selected{% endif %}>Приход</option>
+                    <option value="OUT" {% if is_out_selected %}selected{% endif %}>Расход</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="product" class="form-control" placeholder="Название товара"
+                    value="{{ product_filter }}">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="operator" class="form-control" placeholder="Оператор"
+                    value="{{ operator_filter }}">
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Фильтровать
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Дата операции</th>
+                        <th>Тип</th>
+                        <th>Товар</th>
+                        <th>Количество</th>
+                        <th>Стеллаж</th>
+                        <th>Партия</th>
+                        <th>Оператор</th>
+                        <th>Примечания</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                    <tr class="{% if entry.operation_type == 'OUT' %}table-danger{% else %}table-success{% endif %}">
+                        <td>{{ entry.operation_date|date:"d.m.Y H:i:s" }}</td>
+                        <td>
+                            {% if entry.operation_type == 'IN' %}
+                            <span class="badge bg-success">Приход</span>
+                            {% else %}
+                            <span class="badge bg-danger">Расход</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ entry.product.name }}</td>
+                        <td>{{ entry.quantity }}</td>
+                        <td>{{ entry.rack.name|default:"-" }}</td>
+                        <td>
+                            {% if entry.batch %}
+                            №{{ entry.batch.id }} от {{ entry.batch.arrival_date|date:"d.m.Y" }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>{{ entry.operator|truncatechars:15 }}</td>
+                        <td>{{ entry.notes|truncatechars:20 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-4">
+                            <i class="bi bi-journal-text fs-1 d-block mb-2"></i>
+                            <p>Нет записей в журнале операций</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if entries.paginator.num_pages > 1 %}
+        <nav aria-label="Страницы">
+            <ul class="pagination justify-content-center">
+                {% if entries.has_previous %}
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?page=1{% if operation_type_filter %}&operation_type={{ operation_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}{% if operator_filter %}&operator={{ operator_filter }}{% endif %}">&laquo;</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ entries.previous_page_number }}{% if operation_type_filter %}&operation_type={{ operation_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}{% if operator_filter %}&operator={{ operator_filter }}{% endif %}">Предыдущая</a>
+                </li>
+                {% endif %}
+                {% for num in entries.paginator.page_range %}
+                {% if entries.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+                {% elif num > entries.number|add:'-3' and num < entries.number|add:'3' %} <li class="page-item">
+                    <a class="page-link"
+                        href="?page={{ num }}{% if operation_type_filter %}&operation_type={{ operation_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}{% if operator_filter %}&operator={{ operator_filter }}{% endif %}">{{
+                        num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if entries.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ entries.next_page_number }}{% if operation_type_filter %}&operation_type={{ operation_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}{% if operator_filter %}&operator={{ operator_filter }}{% endif %}">Следующая</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ entries.paginator.num_pages }}{% if operation_type_filter %}&operation_type={{ operation_type_filter }}{% endif %}{% if product_filter %}&product={{ product_filter }}{% endif %}{% if operator_filter %}&operator={{ operator_filter }}{% endif %}">&raquo;</a>
+                    </li>
+                    {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

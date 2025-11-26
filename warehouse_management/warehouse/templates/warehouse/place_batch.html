@@ -1,0 +1,113 @@
+{% extends 'warehouse/base.html' %}
+{% block page_title %}Размещение партии на стеллаже{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="bi bi-box-seam me-2"></i>Размещение партии на стеллаже</h4>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5><strong>Партия:</strong> {{ batch.product.name }}</h5>
+                <p class="mb-1"><strong>Общее количество:</strong> {{ batch.quantity }} ед.</p>
+                <p class="mb-1"><strong>Уже размещено:</strong> {{ placed_quantity|default:0 }} ед.</p>
+                <p class="mb-1"><strong>Осталось разместить:</strong> {{ remaining_quantity|default:batch.quantity }} ед.</p>
+            </div>
+            <div class="col-md-6">
+                <h5><strong>Габариты товара:</strong></h5>
+                <p class="mb-1">Размеры: {{ batch.product.length }} × {{ batch.product.width }} × {{ batch.product.height }} см</p>
+                <p class="mb-1">Вес: {{ batch.product.weight }} кг</p>
+                <p class="mb-0">Объем: {{ batch.product.get_volume|floatformat:0 }} см³</p>
+            </div>
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Партия товара</label>
+                {{ form.batch }}
+                {% if form.batch.errors %}
+                    <div class="text-danger">{{ form.batch.errors }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Стеллаж*</label>
+                {{ form.rack }}
+                {% if form.rack.errors %}
+                    <div class="text-danger">{{ form.rack.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    Выберите стеллаж для размещения товара.
+                </small>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Количество для размещения*</label>
+                {{ form.quantity }}
+                {% if form.quantity.errors %}
+                    <div class="text-danger">{{ form.quantity.errors }}</div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    Укажите количество товара для размещения на выбранном стеллаже.
+                </small>
+            </div>
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'warehouse:suggest_racks' batch_id=batch.id %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад к подбору стеллажей
+                </a>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle"></i> Разместить товар
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% block javascript %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const rackSelect = document.getElementById('id_rack');
+        const quantityInput = document.getElementById('id_quantity');
+        
+        // Обновление максимального количества при изменении стеллажа
+        rackSelect.addEventListener('change', function() {
+            const rackId = this.value;
+            if (rackId) {
+                // Получаем максимальное количество, которое можно разместить
+                fetch(`/warehouse/batches/{{ batch.id }}/rack-capacity/${rackId}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        quantityInput.max = data.max_quantity;
+                        quantityInput.placeholder = `Максимум: ${data.max_quantity}`;
+                        if (parseInt(quantityInput.value) > data.max_quantity) {
+                            quantityInput.value = data.max_quantity;
+                        }
+                        // Обновляем подсказку
+                        const hint = document.querySelector('.form-text.text-muted');
+                        if (hint) {
+                            hint.innerHTML = `Максимальное количество для размещения на выбранном стеллаже: <strong>${data.max_quantity}</strong> ед.`;
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+            }
+        });
+        
+        // Ограничение ввода количества
+        quantityInput.addEventListener('input', function() {
+            if (this.max) {
+                const max = parseInt(this.max);
+                let value = parseInt(this.value) || 0;
+                if (value > max) {
+                    this.value = max;
+                }
+                if (value < 1) {
+                    this.value = 1;
+                }
+            }
+        });
+        
+        // Инициализация при загрузке страницы
+        if (rackSelect.value) {
+            rackSelect.dispatchEvent(new Event('change'));
+        }
+    });
+</script>
+{% endblock %}
+{% endblock content %}

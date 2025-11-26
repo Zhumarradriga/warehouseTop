@@ -1,0 +1,87 @@
+{% extends 'warehouse/base.html' %}
+{% block page_title %}
+{% if object %}
+Редактирование стеллажа
+{% else %}
+Добавление стеллажа
+{% endif %}
+{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">
+            {% if object %}
+            <i class="bi bi-grid me-2"></i>Редактирование стеллажа
+            {% else %}
+            <i class="bi bi-grid me-2"></i>Добавление нового стеллажа
+            {% endif %}
+        </h4>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Название стеллажа*</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                    <div class="text-danger">{{ form.name.errors }}</div>
+                    {% endif %}
+                    <small class="form-text text-muted">Например: Стеллаж-A1, Стеллаж-B2 и т.д.</small>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check form-switch mt-4 pt-2">
+                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                            {% if form.is_active.value or not form.is_active.value == False %}
+                                checked
+                            {% endif %}>
+                        <label class="form-check-label" for="is_active">Стеллаж активен</label>
+                    </div>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Длина (см)*</label>
+                    {{ form.length }}
+                    {% if form.length.errors %}
+                    <div class="text-danger">{{ form.length.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ширина (см)*</label>
+                    {{ form.width }}
+                    {% if form.width.errors %}
+                    <div class="text-danger">{{ form.width.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Высота (см)*</label>
+                    {{ form.height }}
+                    {% if form.height.errors %}
+                    <div class="text-danger">{{ form.height.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Максимальная нагрузка (кг)*</label>
+                    {{ form.max_load }}
+                    {% if form.max_load.errors %}
+                    <div class="text-danger">{{ form.max_load.errors }}</div>
+                    {% endif %}
+                    <small class="form-text text-muted">Максимальный вес товаров, который может выдержать
+                        стеллаж</small>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'warehouse:rack_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад к списку
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> {% if object %}Сохранить изменения{% else %}Добавить стеллаж{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

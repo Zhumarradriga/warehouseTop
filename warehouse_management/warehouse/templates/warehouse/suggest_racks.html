@@ -1,0 +1,85 @@
+{% extends 'warehouse/base.html' %}
+{% block page_title %}Подбор стеллажей для партии{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">
+            <i class="bi bi-grid me-2"></i>Подбор стеллажей для партии
+        </h4>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5><strong>Партия:</strong> {{ batch.product.name }}</h5>
+                <p class="mb-1"><strong>Общее количество:</strong> {{ batch.quantity }} ед.</p>
+                <p class="mb-1"><strong>Уже размещено:</strong> {{ already_placed }} ед.</p>
+                <p class="mb-1"><strong>Осталось разместить:</strong> {{ remaining_quantity }} ед.</p>
+                <p class="mb-0"><strong>Поставщик:</strong> {{ batch.supplier }}</p>
+            </div>
+        </div>
+
+        {% if suggested_racks %}
+        <h5 class="mb-3">Рекомендуемые стеллажи:</h5>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Стеллаж</th>
+                        <th>Свободный объем</th>
+                        <th>Доступная нагрузка</th>
+                        <th>Можно разместить</th>
+                        <th>Предлагаемое количество</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in suggested_racks %}
+                    <tr>
+                        <td>{{ item.rack.name }}</td>
+                        <td>{{ item.rack.available_volume|floatformat:0 }} см³</td>
+                        <td>{{ item.rack.available_weight|floatformat:1 }} кг</td>
+                        <td>{{ item.max_quantity }} ед.</td>
+                        <td><strong>{{ item.suggested_quantity }} ед.</strong></td>
+                        <td>
+                            <a href="{% url 'warehouse:place_batch' batch_id=batch.id %}?rack_id={{ item.rack.id }}&quantity={{ item.suggested_quantity }}"
+                                class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Разместить
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if remaining_quantity > 0 %}
+        <div class="alert alert-warning mt-4">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            На складе недостаточно места для размещения всей партии. Осталось разместить: {{ remaining_quantity }} ед.
+        </div>
+        {% else %}
+        <div class="alert alert-success mt-4">
+            <i class="bi bi-check-circle me-2"></i>
+            Для всей партии найдены подходящие стеллажи!
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="alert alert-danger">
+            <i class="bi bi-x-circle me-2"></i>
+            Не найдено подходящих стеллажей для размещения оставшейся части партии.
+            Попробуйте добавить новые стеллажи или освободить место на существующих.
+        </div>
+        {% endif %}
+
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'warehouse:batch_list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Назад к списку партий
+            </a>
+            <a href="{% url 'warehouse:rack_list' %}" class="btn btn-outline-primary">
+                <i class="bi bi-grid"></i> Список стеллажей
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

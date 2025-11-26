@@ -1,0 +1,133 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Панель управления{% endblock %}
+{% block page_title %}Панель управления{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title">Всего товаров</h5>
+                <p class="card-text display-6">{{ total_products }}</p>
+                <a href="{% url 'warehouse:product_list' %}" class="btn btn-light btn-sm">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Стеллажи</h5>
+                <p class="card-text display-6">{{ total_racks }}</p>
+                <a href="{% url 'warehouse:rack_list' %}" class="btn btn-light btn-sm">Подробнее</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title">Активные размещения</h5>
+                <p class="card-text display-6">{{ active_placements }}</p>
+                <a href="{% url 'warehouse:journal' %}" class="btn btn-light btn-sm">Журнал</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Общее количество</h5>
+                <p class="card-text display-6">{{ total_quantity }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Недавние операции</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_operations %}
+                <ul class="list-group">
+                    {% for operation in recent_operations %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span
+                                class="badge bg-{% if operation.operation_type == 'IN' %}success{% else %}danger{% endif %} me-2">
+                                {% if operation.operation_type == 'IN' %}Приход{% else %}Расход{% endif %}
+                            </span>
+                            {{ operation.product.name }} x {{ operation.quantity }}
+                        </div>
+                        <small class="text-muted">{{ operation.operation_date|date:"d.m.Y H:i" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted">Нет последних операций</p>
+                {% endif %}
+                <a href="{% url 'warehouse:journal' %}" class="btn btn-outline-primary mt-3">Все операции</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">Низкие остатки</h5>
+            </div>
+            <div class="card-body">
+                {% if low_stock_products %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Товар</th>
+                            <th>Категория</th>
+                            <th>Остаток</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in low_stock_products %}
+                        <tr>
+                            <td>{{ item.product.name }}</td>
+                            <td>{{ item.product.category.name }}</td>
+                            <td>
+                                <span class="badge bg-danger">{{ item.quantity }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">Нет товаров с низкими остатками</p>
+                {% endif %}
+                <a href="{% url 'warehouse:search_product' %}" class="btn btn-outline-warning mt-3">Поиск товара</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-3 d-md-block">
+                    <a href="{% url 'warehouse:batch_create' %}" class="btn btn-success me-md-2">
+                        <i class="bi bi-plus-circle me-2"></i>Принять партию
+                    </a>
+                    <a href="{% url 'warehouse:issue_product' %}" class="btn btn-danger me-md-2">
+                        <i class="bi bi-box-arrow-right me-2"></i>Выдать товар
+                    </a>
+                    <a href="{% url 'warehouse:check_capacity' %}" class="btn btn-info me-md-2">
+                        <i class="bi bi-check-circle me-2"></i>Проверить вместимость
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

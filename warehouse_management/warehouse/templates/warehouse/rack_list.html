@@ -1,0 +1,65 @@
+{% extends 'warehouse/base.html' %}
+{% block page_title %}Список стеллажей{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Стеллажи склада</h2>
+    <a href="{% url 'warehouse:rack_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Добавить стеллаж
+    </a>
+</div>
+
+<div class="row mb-4">
+    {% for rack in racks %}
+    <div class="col-md-4 mb-3">
+        <div class="card {% if rack.is_active %}border-primary{% else %}border-secondary{% endif %}">
+            <div
+                class="card-header {% if rack.is_active %}bg-primary{% else %}bg-secondary{% endif %} text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ rack.name }}</h5>
+                <span class="badge {% if rack.is_active %}bg-light text-dark{% else %}bg-dark{% endif %}">
+                    {% if rack.is_active %}Активен{% else %}Неактивен{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    <strong>Габариты:</strong> {{ rack.length }}×{{ rack.width }}×{{ rack.height }} см<br>
+                    <strong>Макс. нагрузка:</strong> {{ rack.max_load }} кг<br>
+                    <strong>Объем:</strong> {{ rack.volume|floatformat:0 }} см³
+                </p>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Загрузка: {{ rack.get_utilization_percent }}%</span>
+                        <span>{{ rack.available_volume|floatformat:0 }} см³ свободно</span>
+                    </div>
+                    <div class="utilization-bar">
+                        <div
+                            class="utilization-fill {% if rack.get_utilization_percent > 85 %}danger{% elif rack.get_utilization_percent > 70 %}warning{% endif %}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <a href="{% url 'warehouse:rack_update' pk=rack.pk %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Редактировать
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="card text-center py-5">
+            <div class="card-body">
+                <i class="bi bi-grid-3x3-gap fs-1 text-muted mb-3"></i>
+                <h4 class="text-muted mb-3">Нет стеллажей</h4>
+                <p class="text-muted mb-4">Добавьте первый стеллаж для организации хранения товаров</p>
+                <a href="{% url 'warehouse:rack_create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Добавить стеллаж
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,131 @@
+{% extends 'warehouse/base.html' %}
+{% block page_title %}Поиск товара{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="bi bi-search me-2"></i>Поиск товара на складе</h4>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="q" class="form-control form-control-lg"
+                    placeholder="Введите название товара, артикул (SKU) или категорию..." value="{{ query }}" required>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Найти
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if query %}
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Результаты поиска для "{{ query }}"</h5>
+    </div>
+    <div class="card-body">
+        {% if products %}
+        <div class="row">
+            {% for product in products %}
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="mb-0">{{ product.name }}</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>Категория:</strong> {{ product.category.name }}<br>
+                            <strong>Артикул (SKU):</strong> {{ product.sku }}<br>
+                            <strong>Габариты:</strong> {{ product.length }}×{{ product.width }}×{{ product.height }}
+                            см<br>
+                            <strong>Вес:</strong> {{ product.weight }} кг<br>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-search fs-1 text-muted mb-3"></i>
+            <h4>Товары не найдены</h4>
+            <p class="text-muted">По вашему запросу "{{ query }}" не найдено товаров на складе</p>
+            <a href="{% url 'warehouse:search_product' %}" class="btn btn-outline-primary mt-3">
+                <i class="bi bi-arrow-clockwise"></i> Новый поиск
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if placements %}
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0">Места хранения товара</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Стеллаж</th>
+                        <th>Товар</th>
+                        <th>Количество</th>
+                        <th>Партия</th>
+                        <th>Дата размещения</th>
+                        <th>Загрузка стеллажа</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for placement in placements %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-primary">{{ placement.rack.name }}</span>
+                            <div class="small text-muted mt-1">
+                                {{ placement.rack.length }}×{{ placement.rack.width }}×{{ placement.rack.height }} см
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ placement.product.name }}</strong><br>
+                            <small class="text-muted">{{ placement.product.sku }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-success fs-6">{{ placement.quantity }} ед.</span>
+                        </td>
+                        <td>
+                            {% if placement.batch %}
+                            №{{ placement.batch.id }} от {{ placement.batch.arrival_date|date:"d.m.Y" }}
+                            {% else %}
+                            Неизвестная партия
+                            {% endif %}
+                        </td>
+                        <td>{{ placement.date_placed|date:"d.m.Y H:i" }}</td>
+                        <td>
+                            <div class="small mb-1">{{ placement.rack.get_utilization_percent }}%</div>
+                            <div class="utilization-bar">
+                                <div
+                                    class="utilization-fill {% if placement.rack.get_utilization_percent > 85 %}danger{% elif placement.rack.get_utilization_percent > 70 %}warning{% endif %}">
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% else %}
+<div class="card text-center py-5">
+    <div class="card-body">
+        <i class="bi bi-search fs-1 text-muted mb-3"></i>
+        <h4>Введите запрос для поиска товара</h4>
+        <p class="text-muted">Введите название товара, артикул (SKU) или категорию для поиска на складе</p>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

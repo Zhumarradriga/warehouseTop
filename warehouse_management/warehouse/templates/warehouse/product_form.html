@@ -1,0 +1,89 @@
+{% extends 'warehouse/base.html' %}
+{% block page_title %}
+    {% if object %}
+        Редактирование товара
+    {% else %}
+        Добавление товара
+    {% endif %}
+{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0">
+            {% if object %}
+                <i class="bi bi-pencil-square me-2"></i>Редактирование товара
+            {% else %}
+                <i class="bi bi-plus-circle me-2"></i>Добавление нового товара
+            {% endif %}
+        </h4>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Название товара*</label>
+                    {{ form.name }}
+                    {% if form.name.errors %}
+                        <div class="text-danger">{{ form.name.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Категория*</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}
+                        <div class="text-danger">{{ form.category.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">SKU (артикул)*</label>
+                    {{ form.sku }}
+                    {% if form.sku.errors %}
+                        <div class="text-danger">{{ form.sku.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Вес (кг)*</label>
+                    {{ form.weight }}
+                    {% if form.weight.errors %}
+                        <div class="text-danger">{{ form.weight.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label">Длина (см)*</label>
+                    {{ form.length }}
+                    {% if form.length.errors %}
+                        <div class="text-danger">{{ form.length.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Ширина (см)*</label>
+                    {{ form.width }}
+                    {% if form.width.errors %}
+                        <div class="text-danger">{{ form.width.errors }}</div>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Высота (см)*</label>
+                    {{ form.height }}
+                    {% if form.height.errors %}
+                        <div class="text-danger">{{ form.height.errors }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="d-flex justify-content-between mt-4">
+                <a href="{% url 'warehouse:product_list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад к списку
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> {% if object %}Сохранить изменения{% else %}Добавить товар{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
