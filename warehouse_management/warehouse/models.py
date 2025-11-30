@@ -9,20 +9,29 @@ class Category(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True, null=True)
 
+    class Meta:
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
+
     def __str__(self):
         return self.name
 
 
 class Product(models.Model):
-    name = models.CharField(max_length=200)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
-    sku = models.CharField(max_length=50, unique=True)  # Stock Keeping Unit
-    length = models.FloatField(help_text="Длина в см")
-    width = models.FloatField(help_text="Ширина в см")
-    height = models.FloatField(help_text="Высота в см")
-    weight = models.FloatField(help_text="Вес в кг")
+    name = models.CharField(max_length=200, verbose_name='Название')
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, verbose_name='Категория')
+    sku = models.CharField(max_length=50, unique=True, verbose_name='Артикул')
+    length = models.FloatField(help_text="Длина в см", verbose_name='Длина')
+    width = models.FloatField(help_text="Ширина в см", verbose_name='Ширина')
+    height = models.FloatField(help_text="Высота в см", verbose_name='Высота')
+    weight = models.FloatField(help_text="Вес в кг", verbose_name='Вес')
     image = models.ImageField(
         upload_to='products/', blank=True, null=True, verbose_name='Изображение товара')
+
+    class Meta:
+        verbose_name = 'Товар'
+        verbose_name_plural = 'Товары'
 
     def __str__(self):
         return f"{self.name} ({self.sku})"
@@ -37,12 +46,18 @@ class Product(models.Model):
 
 
 class Rack(models.Model):
-    name = models.CharField(max_length=50, unique=True)
-    max_load = models.FloatField(help_text="Максимальная нагрузка в кг")
-    length = models.FloatField(help_text="Длина в см")
-    width = models.FloatField(help_text="Ширина в см")
-    height = models.FloatField(help_text="Высота в см")
-    is_active = models.BooleanField(default=True)
+    name = models.CharField(max_length=50, unique=True,
+                            verbose_name='Название')
+    max_load = models.FloatField(
+        help_text="Максимальная нагрузка в кг", verbose_name='Максимальный вес')
+    length = models.FloatField(help_text="Длина в см", verbose_name='Длина')
+    width = models.FloatField(help_text="Ширина в см", verbose_name='Ширина')
+    height = models.FloatField(help_text="Высота в см", verbose_name='Высота')
+    is_active = models.BooleanField(default=True, verbose_name='Активен')
+
+    class Meta:
+        verbose_name = 'Стелаж'
+        verbose_name_plural = 'Стелажы'
 
     def __str__(self):
         return self.name
@@ -87,11 +102,17 @@ class Rack(models.Model):
 
 
 class Batch(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
-    arrival_date = models.DateTimeField(default=timezone.now)
-    supplier = models.CharField(max_length=200)
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, verbose_name='Товар')
+    quantity = models.PositiveIntegerField(verbose_name='Количество')
+    arrival_date = models.DateTimeField(
+        default=timezone.now, verbose_name='Дата привоза')
+    supplier = models.CharField(max_length=200, verbose_name='Поставщик')
     notes = models.TextField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Партия'
+        verbose_name_plural = 'Партиии'
 
     def __str__(self):
         return f"Партия {self.product.name} x {self.quantity} от {self.arrival_date.date()}"
@@ -132,14 +153,20 @@ class Batch(models.Model):
 
 class Placement(models.Model):
     rack = models.ForeignKey(
-        Rack, on_delete=models.CASCADE, related_name='placements')
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+        Rack, on_delete=models.CASCADE, related_name='placements', verbose_name='Стелаж')
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, verbose_name='Товар')
     batch = models.ForeignKey(
-        Batch, on_delete=models.CASCADE, null=True, blank=True)
-    quantity = models.PositiveIntegerField()
-    date_placed = models.DateTimeField(default=timezone.now)
+        Batch, on_delete=models.CASCADE, null=True, blank=True, verbose_name='Партия')
+    quantity = models.PositiveIntegerField(verbose_name='Количество')
+    date_placed = models.DateTimeField(
+        default=timezone.now, verbose_name='Дата размещения')
     # Активное размещение или нет (если товар был выдан)
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField(default=True, verbose_name='Активен')
+
+    class Meta:
+        verbose_name = 'Размещение'
+        verbose_name_plural = 'Размещения'
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity} на {self.rack.name}"
@@ -151,19 +178,24 @@ class WarehouseJournal(models.Model):
         ('OUT', 'Расход'),
     ]
 
-    operation_type = models.CharField(max_length=3, choices=OPERATION_CHOICES)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
+    operation_type = models.CharField(
+        max_length=3, choices=OPERATION_CHOICES, verbose_name='Тип операции')
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, verbose_name='Товар')
+    quantity = models.PositiveIntegerField(verbose_name='Количество')
     rack = models.ForeignKey(
-        Rack, on_delete=models.SET_NULL, null=True, blank=True)
+        Rack, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Стелаж')
     batch = models.ForeignKey(
-        Batch, on_delete=models.SET_NULL, null=True, blank=True)
-    operation_date = models.DateTimeField(default=timezone.now)
-    operator = models.CharField(max_length=100)
-    notes = models.TextField(blank=True, null=True)
+        Batch, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='Партия')
+    operation_date = models.DateTimeField(
+        default=timezone.now, verbose_name='Дата  операции')
+    operator = models.CharField(max_length=100, verbose_name='Оператор')
+    notes = models.TextField(blank=True, null=True, verbose_name='Описание')
 
     def __str__(self):
         return f"{self.operation_type} - {self.product.name} x {self.quantity}"
 
     class Meta:
         ordering = ['-operation_date']
+        verbose_name = 'Операция'
+        verbose_name_plural = 'Операции'

@@ -131,3 +131,11 @@ LOGIN_URL = '/login/'
 # Добавление настроек медиа файлов для изображений
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+ADMIN_MEDIA_PREFIX = '/static/admin/'
+
+
+def admin_css_files():
+    return [
+        'admin/css/custom_admin.css',
+    ]
