@@ -211,16 +211,25 @@
                         <a href="#" class="d-block link-dark text-decoration-none dropdown-toggle" id="userMenu"
                             data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle fs-4"></i>
-                            <span class="ms-1 d-none d-md-inline">Кладовщик</span>
+                            <span class="ms-1 d-none d-md-inline">
+                                {% if request.user.is_authenticated %}
+                                    {{ request.user.get_full_name|default:request.user.username }}
+                                {% else %}
+                                    Гость
+                                {% endif %}
+                            </span>
                         </a>
                         <ul class="dropdown-menu text-small shadow" aria-labelledby="userMenu">
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Профиль</a></li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Настройки</a></li>
-                            <li>
-                                <hr class="dropdown-divider">
-                            </li>
-                            <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-2"></i>Выход</a>
-                            </li>
+                            {% if request.user.is_authenticated %}
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-person me-2"></i>Профиль</a></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Настройки</a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
+                                <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Выход</a></li>
+                            {% else %}
+                                <li><a class="dropdown-item" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-2"></i>Вход</a></li>
+                            {% endif %}
                         </ul>
                     </div>
                 </div>

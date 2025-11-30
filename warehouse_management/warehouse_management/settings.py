@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
     'warehouse',
 ]
 
@@ -121,3 +122,12 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+LOGIN_REDIRECT_URL = '/warehouse/'
+LOGOUT_REDIRECT_URL = '/warehouse/'
+LOGIN_URL = '/login/'
+
+# Добавление настроек медиа файлов для изображений
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
