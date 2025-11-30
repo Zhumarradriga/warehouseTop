@@ -6,12 +6,15 @@ from django.db.models import Sum, Q
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True, null=True)
+    name = models.CharField(max_length=100, unique=True,
+                            verbose_name='Название')
+    description = models.TextField(
+        blank=True, null=True, verbose_name='Название')
 
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
+        ordering = ['-name']
 
     def __str__(self):
         return self.name
@@ -32,6 +35,7 @@ class Product(models.Model):
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Товары'
+        ordering = ['name']
 
     def __str__(self):
         return f"{self.name} ({self.sku})"
@@ -58,6 +62,7 @@ class Rack(models.Model):
     class Meta:
         verbose_name = 'Стелаж'
         verbose_name_plural = 'Стелажы'
+        ordering = ['-name']
 
     def __str__(self):
         return self.name
@@ -113,6 +118,7 @@ class Batch(models.Model):
     class Meta:
         verbose_name = 'Партия'
         verbose_name_plural = 'Партиии'
+        ordering = ['-arrival_date']
 
     def __str__(self):
         return f"Партия {self.product.name} x {self.quantity} от {self.arrival_date.date()}"
@@ -167,6 +173,7 @@ class Placement(models.Model):
     class Meta:
         verbose_name = 'Размещение'
         verbose_name_plural = 'Размещения'
+        ordering = ['-date_placed']
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity} на {self.rack.name}"
