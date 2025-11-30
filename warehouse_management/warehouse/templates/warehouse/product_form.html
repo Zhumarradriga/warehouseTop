@@ -18,7 +18,7 @@
         </h4>
     </div>
     <div class="card-body">
-        <form method="post">
+        <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="row mb-3">
                 <div class="col-md-6">
@@ -73,6 +73,21 @@
                     {% if form.height.errors %}
                         <div class="text-danger">{{ form.height.errors }}</div>
                     {% endif %}
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label">Изображение товара</label>
+                    {{ form.image }}
+                    {% if form.image.errors %}
+                        <div class="text-danger">{{ form.image.errors }}</div>
+                    {% endif %}
+                    {% if object and object.image %}
+                        <div class="mt-2">
+                            <img src="{{ object.image.url }}" class="img-thumbnail" style="max-height: 150px;" alt="Изображение товара">
+                        </div>
+                    {% endif %}
+                    <small class="form-text text-muted">Поддерживаются форматы JPG, PNG, GIF. Максимальный размер — 5 МБ.</small>
                 </div>
             </div>
             <div class="d-flex justify-content-between mt-4">

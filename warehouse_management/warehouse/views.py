@@ -70,12 +70,22 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
     template_name = 'warehouse/product_form.html'
     success_url = reverse_lazy('warehouse:product_list')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'request': self.request})
+        return kwargs
+
 
 class ProductUpdateView(LoginRequiredMixin, UpdateView):
     model = Product
     form_class = ProductForm
     template_name = 'warehouse/product_form.html'
     success_url = reverse_lazy('warehouse:product_list')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs.update({'request': self.request})
+        return kwargs
 
 
 class RackListView(LoginRequiredMixin, ListView):

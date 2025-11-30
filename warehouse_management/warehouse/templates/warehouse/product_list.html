@@ -38,6 +38,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>ID</th>
+                        <th>Изображение</th>
                         <th>Название</th>
                         <th>Категория</th>
                         <th>SKU</th>
@@ -51,6 +52,13 @@
                     {% with first_batch=product.batch_set.first %}
                     <tr>
                         <td>{{ product.id }}</td>
+                        <td>
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" class="img-thumbnail" style="max-height: 50px; max-width: 50px;" alt="{{ product.name }}">
+                            {% else %}
+                                <i class="bi bi-image text-muted" style="font-size: 1.5rem;"></i>
+                            {% endif %}
+                        </td>
                         <td>{{ product.name }}</td>
                         <td>{{ product.category.name }}</td>
                         <td>{{ product.sku }}</td>
