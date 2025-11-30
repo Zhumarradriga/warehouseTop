@@ -106,6 +106,21 @@
             margin-right: -20px;
             margin-bottom: -20px;
         }
+
+        .dropdown-item button {
+            background: none;
+            border: none;
+            padding: 0;
+            text-align: left;
+            color: inherit;
+            width: 100%;
+            cursor: pointer;
+            font: inherit;
+        }
+        .dropdown-item button:hover {
+            text-decoration: none;
+            color: #0d6efd;
+        }
     </style>
 </head>
 
@@ -226,7 +241,14 @@
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
-                                <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="bi bi-box-arrow-right me-2"></i>Выход</a></li>
+                                <li>
+                                    <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="bi bi-box-arrow-right me-2"></i>Выход
+                                        </button>
+                                    </form>
+                                </li>
                             {% else %}
                                 <li><a class="dropdown-item" href="{% url 'login' %}"><i class="bi bi-box-arrow-in-right me-2"></i>Вход</a></li>
                             {% endif %}
